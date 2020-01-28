@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -201,6 +202,27 @@ func GeneratePrivateKey(keyType string, keyBits int, container ParsedPrivateKeyC
 			return errutil.InternalError{Err: fmt.Sprintf("error generating RSA private key: %v", err)}
 		}
 		privateKeyBytes = x509.MarshalPKCS1PrivateKey(privateKey.(*rsa.PrivateKey))
+	case "ed25519":
+		func GenerateKey(rand io.Reader) (PublicKey, PrivateKey, error) {
+			if rand == nil {
+				rand = cryptorand.Reader
+			}
+
+
+			seed := make([]byte, SeedSize)
+			if _, err := io.ReadFull(rand, seed); err != nil {
+				return nil, nil, err
+			}
+
+
+			privateKey := NewKeyFromSeed(seed)
+			publicKey := make([]byte, PublicKeySize)
+			copy(publicKey, privateKey[32:])
+
+
+			return publicKey, privateKey, nil
+
+		}
 	case "ec":
 		privateKeyType = ECPrivateKey
 		var curve elliptic.Curve
